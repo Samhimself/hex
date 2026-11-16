@@ -90,6 +90,7 @@ impl Feature {
             Self::VoicePrompt => "Voice prompt",
             Self::CursorContext => "Rewrite reads nearby text",
             Self::CopyCaptureZip => "Copy captures as a zip",
+            Self::AutoPasteCapture => "Paste captures automatically",
             Self::ShellCompletions => "Shell completions",
             Self::YoloMode => "YOLO mode",
             Self::CopyDictationAudio => "Copy dictation audio",
@@ -317,6 +318,9 @@ impl Feature {
             }
             Self::CopyCaptureZip => {
                 "A finished capture copies as one zip file, without video or audio."
+            }
+            Self::AutoPasteCapture => {
+                "Paste a finished capture's image into the app you were using."
             }
             Self::ShellCompletions => {
                 "Print a completion script for bash, zsh, fish, elvish, or PowerShell with hex completions <shell>"

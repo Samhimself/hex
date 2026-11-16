@@ -3374,7 +3374,8 @@ fn finish_captures(
                     missing_transcript = written.missing_transcript.as_deref(),
                     "capture finished"
                 );
-                let copy_error = if crate::capture_zip::copy_as_zip(&bundle) {
+                let copied_as_zip = crate::capture_zip::copy_as_zip(&bundle);
+                let copy_error = if copied_as_zip {
                     None
                 } else {
                     copy_to_clipboard(&bundle)
@@ -3390,6 +3391,16 @@ fn finish_captures(
                     copy_error,
                     route,
                 );
+                if !copied_as_zip
+                    && crate::labs::auto_paste_capture()
+                    && let Err(error) = paste_capture_image(&bundle)
+                {
+                    tracing::warn!(
+                        error = format!("{error:#}"),
+                        bundle = %bundle.display(),
+                        "automatic capture paste failed"
+                    );
+                }
                 if let Some(look) = look {
                     let job = routing::Job::Written {
                         bundle: bundle.clone(),
@@ -3406,6 +3417,28 @@ fn finish_captures(
             }
         }
     }
+}
+
+/// Pastes only a finished capture's contact-sheet image into the app that was
+/// active before Annotate. The ordinary Paste action also pastes the summary;
+/// this automatic path intentionally does not.
+#[cfg(target_os = "macos")]
+fn paste_capture_image(bundle: &Path) -> anyhow::Result<()> {
+    objc2::rc::autoreleasepool(|_| {
+        scrawl_capture::capture::ensure_external_app_active();
+        let (directory, loaded) = scrawl_capture::handoff::load_bundle(bundle)?;
+        anyhow::ensure!(!loaded.keyframes.is_empty(), "capture has no image");
+        let image = std::fs::read(directory.join(&loaded.contact_sheet))?;
+        scrawl_capture::capture::wait_for_modifiers_released(350);
+        scrawl_capture::handoff::copy_png_to_clipboard(&image)?;
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        crate::keyboard::post_command('v').map_err(|error| anyhow::anyhow!("{error:#}"))
+    })
+}
+
+#[cfg(not(target_os = "macos"))]
+fn paste_capture_image(_bundle: &Path) -> anyhow::Result<()> {
+    Ok(())
 }
 
 /// Who learns of each written Screenshots recording, on the

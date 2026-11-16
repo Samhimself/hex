@@ -574,6 +574,11 @@ pub(super) const KEYS: &[Key] = &[
         "Labs: a finished Annotate capture copies to the clipboard as one light zip file you can attach anywhere, without its video and audio (macOS, Linux, Windows)",
     ),
     key(
+        "labs.auto_paste_capture",
+        Kind::Bool,
+        "Labs: a finished Annotate capture pastes its contact-sheet image into the app that was active before Annotate (macOS)",
+    ),
+    key(
         "labs.gnome_clipboard_restore",
         Kind::Bool,
         "Labs: on Wayland desktops without data-control, such as GNOME, a paste restores the previous clipboard through XWayland while it is already running (Linux)",

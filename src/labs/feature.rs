@@ -86,6 +86,7 @@ pub enum Feature {
     PrintStart,
     VoicePrompt,
     CopyCaptureZip,
+    AutoPasteCapture,
     ShellCompletions,
     YoloMode,
     CursorContext,
@@ -93,7 +94,7 @@ pub enum Feature {
 }
 
 impl Feature {
-    pub const ALL: [Self; 85] = [
+    pub const ALL: [Self; 86] = [
         Self::Meetings,
         Self::VoiceFilter,
         Self::Playground,
@@ -175,6 +176,7 @@ impl Feature {
         Self::PrintStart,
         Self::VoicePrompt,
         Self::CopyCaptureZip,
+        Self::AutoPasteCapture,
         Self::ShellCompletions,
         Self::YoloMode,
         Self::CursorContext,

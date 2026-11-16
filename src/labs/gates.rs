@@ -89,6 +89,16 @@ pub fn copy_capture_zip() -> bool {
     COPY_CAPTURE_ZIP.load(Ordering::Acquire) && Feature::CopyCaptureZip.on_this_os()
 }
 
+/// A finished Annotate capture pastes its contact-sheet image into the app
+/// that was active before Annotate (macOS; read after each capture is written).
+#[cfg_attr(not(hex_capture), allow(dead_code))]
+pub fn auto_paste_capture() -> bool {
+    // The state word has no bit for it: its own atomic, written by
+    // `labs::apply`, and loaded here first in a process that never applied.
+    let _ = state();
+    AUTO_PASTE_CAPTURE.load(Ordering::Acquire) && Feature::AutoPasteCapture.on_this_os()
+}
+
 /// A kept dictation recording may be copied from History and the menu bar or
 /// tray as a file on the clipboard (read as each Copy audio runs and each
 /// menu or tray opens). It needs Labs › Keep recordings, which owns every

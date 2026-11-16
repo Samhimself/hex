@@ -13,7 +13,10 @@ impl Feature {
         matches!(self.audience(), Audience::Everyone)
             && !matches!(
                 self,
-                Self::Screenshots | Self::AnnotateReplay | Self::CopyCaptureZip
+                Self::Screenshots
+                    | Self::AnnotateReplay
+                    | Self::CopyCaptureZip
+                    | Self::AutoPasteCapture
             )
     }
 
@@ -116,6 +119,7 @@ mod tests {
             Feature::Screenshots,
             Feature::AnnotateReplay,
             Feature::CopyCaptureZip,
+            Feature::AutoPasteCapture,
         ] {
             assert!(!feature.on_the_web(), "{}", feature.name());
         }

@@ -10,7 +10,8 @@ PipeWire (`capture.linux`), on Windows Windows.Graphics.Capture
 mirror) and narration from Hex's microphone, takes ink and clicks (Shift on
 macOS and Windows, or the Annotate key held or the pen), transcribes the narration with word timestamps on
 Hex's loaded model, writes a Scrawl bundle into Scrawl's captures folder,
-copies it to the clipboard, and sends it to an OpenCode session with Scrawl's
+copies it to the clipboard, can paste its image back into the active app, and
+sends it to an OpenCode session with Scrawl's
 router (`crates/router`), run in Hex's process. Settings › Annotate (under
 Labs in the sidebar) holds its settings. Scrawl's capsule (switch
 chips, the on-screen picker, route chips) and its ink and laser overlay are
@@ -849,6 +850,22 @@ Copying a written capture                 // capture.copy; Labs › Copy capture
 │       // copy_capture_zip_is_its_own_switch_and_everywhere (labs.rs)
 │       // not verified: pasting the zip into a real chat or agent app on any OS,
 │       // and the Windows clipboard write (cross-compiled only)
+
+Automatic image paste                     // capture.auto_paste; Labs › Paste captures automatically
+├── Off by default; available on macOS when Annotate is built in
+├── After a non-Screenshots capture is written and copied, Hex returns to the
+│   external app that was active before Annotate, puts only the contact-sheet
+│   PNG on the clipboard, and posts ⌘V into its active input
+├── The transcript summary is not pasted; the capsule's ordinary Paste action
+│   remains the image-then-summary path
+├── Labs › Copy captures as a zip wins when both switches are on: the automatic
+│   paste does not replace the zip on the clipboard
+├── A missing image or failed paste is logged; the capture remains written and
+│   the capsule keeps its Paste, Inspect, and Send to… recovery actions
+└── The destination is the remembered external app, so a user can still move
+    focus within that app before the capture finishes
+    // checks: auto_paste_capture_is_its_own_switch_and_macos_only (labs.rs)
+    // not verified: native end-to-end paste into a real app input
 
 What a send carries                      // capture.send (router opencode::send_bundle)
 ├── One prompt: the summary (transcript, marks, notes) as text, then the
