@@ -92,6 +92,7 @@ impl Feature {
             | Self::PrintStart
             | Self::VoicePrompt
             | Self::CopyCaptureZip
+            | Self::AutoPasteCapture
             | Self::ShellCompletions
             | Self::YoloMode
             | Self::CursorContext
@@ -183,7 +184,9 @@ impl Feature {
             | Self::CursorContext
             | Self::CleanUpWithAppleIntelligence => 20261113,
             Self::CalendarMenu => 20261114,
-            Self::CopyDictationAudio | Self::MicrophoneKeyAlone => 20261115,
+            Self::CopyDictationAudio | Self::MicrophoneKeyAlone | Self::AutoPasteCapture => {
+                20261115
+            }
         }
     }
 
@@ -294,6 +297,7 @@ impl Feature {
             | Self::PrintStart
             | Self::ScreenVocabulary
             | Self::CursorContext
+            | Self::AutoPasteCapture
             | Self::MoreDictationShortcuts
             | Self::CalendarMenu => MACOS,
             Self::CleanUpWithAppleIntelligence => MACOS,
@@ -429,6 +433,7 @@ impl Feature {
             Self::PrintStart => "print-start",
             Self::VoicePrompt => "voice-prompt",
             Self::CopyCaptureZip => "copy-capture-zip",
+            Self::AutoPasteCapture => "auto-paste-capture",
             Self::ShellCompletions => "shell-completions",
             Self::YoloMode => "yolo-mode",
             Self::CursorContext => "cursor-context",
@@ -520,6 +525,7 @@ impl Feature {
             Self::PrintStart => "labs.print_start",
             Self::VoicePrompt => "labs.voice_prompt",
             Self::CopyCaptureZip => "labs.copy_capture_zip",
+            Self::AutoPasteCapture => "labs.auto_paste_capture",
             Self::ShellCompletions => "labs.shell_completions",
             Self::YoloMode => "labs.yolo_mode",
             Self::CursorContext => "labs.cursor_context",

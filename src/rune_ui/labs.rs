@@ -702,6 +702,20 @@ fn rows(ui: &Ui) -> Vec<Row> {
             on: !locked && Feature::CopyCaptureZip.on(settings),
             ..copy_zip
         });
+        if caps.os == super::platform::Os::Macos {
+            let locked = annotate_locked || Feature::AutoPasteCapture.managed().is_some();
+            let auto_paste = row(Feature::AutoPasteCapture, None);
+            rows.push(Row {
+                locked,
+                about: if locked {
+                    super::managed_note()
+                } else {
+                    auto_paste.about
+                },
+                on: !locked && Feature::AutoPasteCapture.on(settings),
+                ..auto_paste
+            });
+        }
         let locked = annotate_locked;
         rows.push(Row {
             lab: Lab::Annotate,
@@ -847,6 +861,7 @@ fn row_key(lab: Lab) -> &'static str {
         Feature::MoreCallApps => "lab-more-call-apps",
         Feature::AnnotateReplay => "lab-annotate-replay",
         Feature::CopyCaptureZip => "lab-copy-capture-zip",
+        Feature::AutoPasteCapture => "lab-auto-paste-capture",
         Feature::MeetingImport => "lab-meeting-import",
         Feature::MeetingDescriptiveFilenames => "lab-meeting-descriptive-filenames",
         Feature::MeetingNotesFile => "lab-meeting-notes-file",

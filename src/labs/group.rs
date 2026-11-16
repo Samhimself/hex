@@ -125,7 +125,8 @@ impl Feature {
             Self::Screenshots
             | Self::AnnotateReplay
             | Self::GnomeAnnotate
-            | Self::CopyCaptureZip => Group::Annotate,
+            | Self::CopyCaptureZip
+            | Self::AutoPasteCapture => Group::Annotate,
             Self::MouseShortcuts
             | Self::SecondDictationShortcut
             | Self::MoreDictationShortcuts

@@ -172,6 +172,9 @@ impl Feature {
             Self::CopyCaptureZip => {
                 "A finished capture copies as one zip file, without video or audio."
             }
+            Self::AutoPasteCapture => {
+                "After Annotate finishes, return to the app you were using and paste the contact-sheet image into its active input."
+            }
             Self::FollowLiveTranscript => {
                 "While a meeting records, the transcript scrolls to the newest line. Scroll up to read earlier text; scroll back to the bottom to follow again."
             }

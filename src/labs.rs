@@ -196,6 +196,7 @@ impl Feature {
             Self::PrintStart => settings.labs.print_start,
             Self::VoicePrompt => settings.labs.voice_prompt,
             Self::CopyCaptureZip => settings.labs.copy_capture_zip,
+            Self::AutoPasteCapture => settings.labs.auto_paste_capture,
             Self::ShellCompletions => settings.labs.shell_completions,
             Self::YoloMode => settings.labs.yolo_mode,
             Self::CursorContext => settings.labs.cursor_context,
@@ -289,6 +290,7 @@ impl Feature {
             &mut labs.print_start,
             &mut labs.voice_prompt,
             &mut labs.copy_capture_zip,
+            &mut labs.auto_paste_capture,
             &mut labs.shell_completions,
             &mut labs.yolo_mode,
             &mut labs.cursor_context,
@@ -388,6 +390,7 @@ impl Feature {
             Self::PrintStart => settings.labs.print_start = on,
             Self::VoicePrompt => settings.labs.voice_prompt = on,
             Self::CopyCaptureZip => settings.labs.copy_capture_zip = on,
+            Self::AutoPasteCapture => settings.labs.auto_paste_capture = on,
             Self::ShellCompletions => settings.labs.shell_completions = on,
             Self::YoloMode => settings.labs.yolo_mode = on,
             Self::CursorContext => settings.labs.cursor_context = on,
@@ -539,6 +542,11 @@ static VOICE_PROMPT: AtomicBool = AtomicBool::new(false);
 /// is full, so this lab has its own atomic.
 static COPY_CAPTURE_ZIP: AtomicBool = AtomicBool::new(false);
 
+/// Labs › Paste captures automatically's switch, set beside [`STATE`] like
+/// [`PRINT_START`]: a written capture pastes its contact-sheet image into the
+/// previously active app. The state word is full, so this lab has its own atomic.
+static AUTO_PASTE_CAPTURE: AtomicBool = AtomicBool::new(false);
+
 /// Labs › Copy dictation audio's switch, set beside [`STATE`] like
 /// [`PRINT_START`]: History and the menu bar or tray put an entry's kept WAV
 /// on the clipboard as a file. The state word is full, so this lab has its
@@ -611,6 +619,7 @@ fn state() -> u64 {
                 CURSOR_CONTEXT.store(cursor_context_enabled(&saved), Ordering::Release);
                 VOICE_PROMPT.store(voice_prompt_enabled(&saved), Ordering::Release);
                 COPY_CAPTURE_ZIP.store(copy_capture_zip_enabled(&saved), Ordering::Release);
+                AUTO_PASTE_CAPTURE.store(auto_paste_capture_enabled(&saved), Ordering::Release);
                 COPY_DICTATION_AUDIO.store(copy_dictation_audio_enabled(&saved), Ordering::Release);
                 K_QUANT_MODELS.store(k_quant_models_enabled(&saved), Ordering::Release);
                 CALENDAR_MENU.store(calendar_menu_enabled(&saved), Ordering::Release);
@@ -669,6 +678,14 @@ fn copy_capture_zip_enabled(settings: &LabsSettings) -> bool {
     settings.copy_capture_zip
         && Feature::CopyCaptureZip.shipped()
         && Feature::CopyCaptureZip.managed().is_none()
+}
+
+/// Whether `settings` turn on Labs › Paste captures automatically in this
+/// build, before its managed lock; the state word has no bit for it.
+fn auto_paste_capture_enabled(settings: &LabsSettings) -> bool {
+    settings.auto_paste_capture
+        && Feature::AutoPasteCapture.shipped()
+        && Feature::AutoPasteCapture.managed().is_none()
 }
 
 /// Whether `settings` turn on Labs › Smaller model files in this build,
@@ -798,6 +815,7 @@ pub(crate) fn apply(settings: &LabsSettings) {
     CURSOR_CONTEXT.store(cursor_context_enabled(settings), Ordering::Release);
     VOICE_PROMPT.store(voice_prompt_enabled(settings), Ordering::Release);
     COPY_CAPTURE_ZIP.store(copy_capture_zip_enabled(settings), Ordering::Release);
+    AUTO_PASTE_CAPTURE.store(auto_paste_capture_enabled(settings), Ordering::Release);
     COPY_DICTATION_AUDIO.store(copy_dictation_audio_enabled(settings), Ordering::Release);
     K_QUANT_MODELS.store(k_quant_models_enabled(settings), Ordering::Release);
     CALENDAR_MENU.store(calendar_menu_enabled(settings), Ordering::Release);
@@ -1966,6 +1984,31 @@ mod tests {
             "labs.copy_capture_zip"
         );
         assert_eq!(Feature::CopyCaptureZip.name(), "copy-capture-zip");
+    }
+
+    #[test]
+    fn auto_paste_capture_is_its_own_switch_and_macos_only() {
+        let mut labs = LabsSettings::default();
+        assert!(!auto_paste_capture_enabled(&labs));
+        labs.auto_paste_capture = true;
+        labs.unload_idle_minutes = 24 * 60;
+        assert!(auto_paste_capture_enabled(&labs));
+        // The state word has no bit for it: the other switches keep theirs.
+        let state = encode_where(&labs, |_| true);
+        assert_eq!(state & SCREENSHOTS, 0);
+        assert_eq!((state >> MINUTES_SHIFT) & MINUTES_MASK, 24 * 60);
+        assert_eq!(
+            Feature::AutoPasteCapture.on_this_os(),
+            cfg!(target_os = "macos")
+        );
+        assert_eq!(Feature::AutoPasteCapture.added(), 20261115);
+        assert_eq!(Feature::AutoPasteCapture.audience(), Audience::Everyone);
+        assert_eq!(Feature::AutoPasteCapture.group(), Group::Annotate);
+        assert_eq!(
+            Feature::AutoPasteCapture.settings_key(),
+            "labs.auto_paste_capture"
+        );
+        assert_eq!(Feature::AutoPasteCapture.name(), "auto-paste-capture");
     }
 
     #[test]
