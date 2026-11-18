@@ -47,6 +47,22 @@ time.
 
 To go back, quit Hex Test, delete it, and open Hex.
 
+### Install from a local checkout
+
+From the repository, build or update the test app in place and reopen it with:
+
+```sh
+scripts/install-test-app.sh
+```
+
+This safely replaces only `/Applications/Hex Test.app`; it refuses to replace
+an app at that path with a different bundle identifier. Because the path stays
+the same, a Hex Test icon added to the Dock continues to open the updated app.
+Its settings and model stay in the same `hex-test` Application Support folder.
+
+The build is ad-hoc signed, so macOS treats each changed binary as new code and
+may require Microphone, Accessibility, and Screen Recording permission again.
+
 ## Windows (10 or 11, x64 or ARM64)
 
 The installer and executable are unsigned, so SmartScreen warns: choose **More
