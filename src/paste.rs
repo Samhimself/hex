@@ -271,6 +271,141 @@ impl Paster {
         Ok(())
     }
 
+    /// Labs › Transform typed text (macOS): copy the current selection, or
+    /// select and copy the whole focused field when there is none; clean it
+    /// locally; prove the same app and text are still selected; then replace
+    /// it and restore the previous clipboard.
+    pub fn transform_typed_text(&mut self) -> Result<String> {
+        if !crate::labs::typed_text() {
+            return Err(eyre!("Transform typed text is off in Settings › Labs"));
+        }
+        wait_for_keyboard_neutral()?;
+        let pid = crate::dictation::context::frontmost_pid()
+            .ok_or_else(|| eyre!("no other app has a focused text field"))?;
+        let focused = crate::accessibility::focused_text_element(pid)
+            .ok_or_else(|| eyre!("focus a non-password text field and try again"))?;
+        let mut original = Some(self.begin_typed_text_clipboard()?);
+        let result = (|| {
+            clear_clipboard(&self.clipboard)?;
+            let mut selected = copy_focused_text(&self.clipboard)?;
+            if selected.is_none() {
+                keyboard::post_command('a')?;
+                thread::sleep(Duration::from_millis(30));
+                clear_clipboard(&self.clipboard)?;
+                selected = copy_focused_text(&self.clipboard)?;
+            }
+            let selected = selected
+                .filter(|text| !text.trim().is_empty())
+                .ok_or_else(|| eyre!("the focused field has no text to clean"))?;
+            let copied_change_count = self.clipboard.changeCount();
+            let replacement = crate::typed_text::clean(&selected)?;
+
+            if self.clipboard.changeCount() != copied_change_count {
+                // A person copied something while the model worked. Keep
+                // their newer clipboard instead of putting the old one back.
+                original = None;
+                return Err(eyre!("the clipboard changed; nothing was replaced"));
+            }
+            if crate::dictation::context::frontmost_pid() != Some(pid)
+                || !focused.is_still_focused(pid)
+            {
+                return Err(eyre!(
+                    "the focused text field changed; nothing was replaced"
+                ));
+            }
+            if replacement == selected {
+                return Ok(selected);
+            }
+
+            clear_clipboard(&self.clipboard)?;
+            let current = copy_focused_text(&self.clipboard)?;
+            if current.as_deref() != Some(selected.as_str()) {
+                return Err(eyre!("the focused text changed; nothing was replaced"));
+            }
+            let previous = original.take().expect("the original clipboard is present");
+            if let Err(error) = write_clipboard_text(&self.clipboard, &replacement, true) {
+                let _ = restore_clipboard(&self.clipboard, &previous);
+                return Err(error);
+            }
+            if let Err(error) = keyboard::post_command('v') {
+                let _ = restore_clipboard(&self.clipboard, &previous);
+                return Err(error);
+            }
+            self.restore_typed_text_clipboard_later(previous);
+            Ok(replacement)
+        })();
+
+        if let Some(previous) = original
+            && let Err(error) = restore_clipboard(&self.clipboard, &previous)
+        {
+            tracing::warn!(%error, "could not restore the clipboard after typed-text cleanup");
+        }
+        result
+    }
+
+    /// Takes ownership of any pending dictation restore, so a delayed thread
+    /// cannot overwrite this job's copies. If the clipboard has changed since
+    /// that paste, its current contents are the new original instead.
+    fn begin_typed_text_clipboard(&mut self) -> Result<ClipboardSnapshot> {
+        self.continuation = None;
+        self.prepared_clipboard = None;
+        let change_count = self.clipboard.changeCount();
+        let mut restore = self
+            .clipboard_restore
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        restore.generation = restore.generation.wrapping_add(1);
+        let original = if restore.last_change_count == Some(change_count) {
+            match restore.original.take() {
+                Some(original) => original,
+                None => capture_clipboard(&self.clipboard)?,
+            }
+        } else {
+            capture_clipboard(&self.clipboard)?
+        };
+        restore.original = None;
+        restore.last_change_count = None;
+        Ok(original)
+    }
+
+    fn restore_typed_text_clipboard_later(&mut self, previous: ClipboardSnapshot) {
+        let inserted_change_count = self.clipboard.changeCount();
+        let generation = {
+            let mut restore = self
+                .clipboard_restore
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            restore.generation = restore.generation.wrapping_add(1);
+            restore.original = Some(previous);
+            restore.last_change_count = Some(inserted_change_count);
+            restore.generation
+        };
+        let clipboard_restore = self.clipboard_restore.clone();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(500));
+            let mut restore = clipboard_restore
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            let clipboard = NSPasteboard::generalPasteboard();
+            if restore.generation != generation
+                || restore.last_change_count != Some(clipboard.changeCount())
+            {
+                if restore.generation == generation {
+                    restore.original = None;
+                    restore.last_change_count = None;
+                }
+                return;
+            }
+            let Some(previous) = restore.original.take() else {
+                return;
+            };
+            restore.last_change_count = None;
+            if let Err(error) = restore_clipboard(&clipboard, &previous) {
+                tracing::warn!(%error, "could not restore the clipboard after typed-text cleanup");
+            }
+        });
+    }
+
     /// Leaves `text` on the clipboard for the user to paste: no ⌘V, no typed
     /// text, and no restore. A pending restore stands down and no earlier
     /// snapshot comes back, and the next paste starts a new continuation.
@@ -365,6 +500,43 @@ impl Paster {
             },
             thread::sleep,
         )
+    }
+}
+
+fn wait_for_keyboard_neutral() -> Result<()> {
+    let deadline = Instant::now() + Duration::from_secs(1);
+    while !crate::suppression::keyboard_is_neutral() {
+        if Instant::now() >= deadline {
+            return Err(eyre!("release the shortcut keys and try again"));
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    Ok(())
+}
+
+fn clear_clipboard(clipboard: &NSPasteboard) -> Result<()> {
+    clipboard.clearContents();
+    if clipboard
+        .stringForType(unsafe { NSPasteboardTypeString })
+        .is_some()
+    {
+        return Err(eyre!("could not clear the clipboard before copying text"));
+    }
+    Ok(())
+}
+
+fn copy_focused_text(clipboard: &NSPasteboard) -> Result<Option<String>> {
+    keyboard::post_command('c')?;
+    thread::sleep(Duration::from_millis(40));
+    let deadline = Instant::now() + Duration::from_millis(600);
+    loop {
+        if let Some(text) = clipboard.stringForType(unsafe { NSPasteboardTypeString }) {
+            return Ok(Some(text.to_string()));
+        }
+        if Instant::now() >= deadline {
+            return Ok(None);
+        }
+        thread::sleep(Duration::from_millis(40));
     }
 }
 

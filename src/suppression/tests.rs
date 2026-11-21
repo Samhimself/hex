@@ -4730,6 +4730,55 @@ fn paste_last_can_be_disabled_or_bound_to_a_side_specific_shortcut() {
 }
 
 #[test]
+fn typed_text_fires_only_for_its_configured_key_press() {
+    let key_code = 105;
+    let binding = RuntimeHotkey {
+        modifiers: crate::app_settings::HotkeyModifiers {
+            option: Some(crate::app_settings::ModifierSide::Either),
+            command: Some(crate::app_settings::ModifierSide::Either),
+            ..Default::default()
+        },
+        key_code: Some(key_code),
+    };
+    let configured = RuntimeHotkeys {
+        paste_last: None,
+        paste_meeting: None,
+        typed_text: Some(binding),
+        ..RuntimeHotkeys::default()
+    };
+    let press = InputEvent::Key {
+        code: key_code,
+        down: true,
+        flags: OPTION_KEY_MASK | crate::app_settings::COMMAND_KEY_MASK,
+    };
+    assert_eq!(
+        paste_action(press, configured),
+        Some(HotkeyAction::TypedText)
+    );
+    assert_eq!(
+        paste_action(
+            InputEvent::Key {
+                code: key_code,
+                down: false,
+                flags: OPTION_KEY_MASK | crate::app_settings::COMMAND_KEY_MASK,
+            },
+            configured
+        ),
+        None
+    );
+    assert_eq!(
+        paste_action(
+            press,
+            RuntimeHotkeys {
+                typed_text: None,
+                ..configured
+            }
+        ),
+        None
+    );
+}
+
+#[test]
 fn meeting_paste_is_only_active_in_developer_builds() {
     let now = capture_time();
     let mut hotkey = test_hotkey(true, now);

@@ -1286,7 +1286,7 @@ impl AppSettings {
             others.push(raw.clone());
         }
         if slot != HotkeySlot::TypedText
-            && cfg!(target_os = "linux")
+            && cfg!(any(target_os = "macos", target_os = "linux"))
             && self.labs.typed_text
             && let Some(typed) = &self.typed_text_hotkey
         {
@@ -1358,7 +1358,7 @@ pub struct RuntimeHotkeys {
     pub capture_replay: Option<RuntimeHotkey>,
     /// Dictate without processing, while it is bound.
     pub raw_dictation: Option<RuntimeHotkey>,
-    /// Labs › Transform typed text (Linux), while it is on and bound.
+    /// Labs › Transform typed text (macOS and Linux), while it is on and bound.
     pub typed_text: Option<RuntimeHotkey>,
     /// Labs › Second dictation shortcut, while it is on and bound.
     pub second_dictation: Option<RuntimeHotkey>,

@@ -47,7 +47,7 @@ pub(in crate::rune_ui) fn portal_grant(
         ShortcutTarget::Dictation => "Dictation",
         ShortcutTarget::PasteLast => "Paste last dictation",
         ShortcutTarget::RawDictation => "Dictate without processing",
-        #[cfg(target_os = "linux")]
+        #[cfg(any(target_os = "macos", target_os = "linux"))]
         ShortcutTarget::TypedText => "Transform typed text",
         #[cfg(any(target_os = "windows", target_os = "linux"))]
         ShortcutTarget::TerminalPaste => "Terminal paste shortcut",

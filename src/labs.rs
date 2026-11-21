@@ -1584,7 +1584,10 @@ mod tests {
         assert_ne!(state & TYPED_TEXT, 0);
         assert_eq!(state & GNOME_CLIPBOARD_RESTORE, 0);
         assert_eq!((state >> MINUTES_SHIFT) & MINUTES_MASK, 24 * 60);
-        assert_eq!(Feature::TypedText.on_this_os(), cfg!(target_os = "linux"));
+        assert_eq!(
+            Feature::TypedText.on_this_os(),
+            cfg!(any(target_os = "macos", target_os = "linux"))
+        );
     }
 
     #[test]

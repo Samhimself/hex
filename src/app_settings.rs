@@ -290,8 +290,8 @@ pub struct AppSettings {
     /// Dictate without processing: records like the dictation shortcut and
     /// pastes the transcript as heard. Unbound by default.
     pub raw_dictation_hotkey: Option<HotkeyBinding>,
-    /// Labs › Transform typed text (Linux): runs the focused app's Output
-    /// steps on the text already typed in the focused field and replaces it.
+    /// Labs › Transform typed text: runs on text already typed in the
+    /// focused field and replaces it (macOS and Linux).
     /// Unbound by default and ignored while its Labs toggle is off.
     pub typed_text_hotkey: Option<HotkeyBinding>,
     /// Labs › Second dictation shortcut: another shortcut that dictates
@@ -1088,15 +1088,17 @@ impl AppSettings {
             .filter(|binding| !self.hotkey_in_use(HotkeySlot::SecondDictation, binding))
     }
 
-    /// Labs › Transform typed text's binding while it takes effect: Linux,
-    /// its toggle on, bound, and sharing no key with another active
-    /// shortcut. Otherwise the listener registers nothing for it.
+    /// Labs › Transform typed text's binding while it takes effect: macOS
+    /// or Linux, its toggle on, bound, naming a key on macOS, and sharing no
+    /// key with another active shortcut. Otherwise the listener registers
+    /// nothing for it.
     pub fn active_typed_text_hotkey(&self) -> Option<&HotkeyBinding> {
-        if !cfg!(target_os = "linux") || !self.labs.typed_text {
+        if !cfg!(any(target_os = "macos", target_os = "linux")) || !self.labs.typed_text {
             return None;
         }
         self.typed_text_hotkey
             .as_ref()
+            .filter(|binding| !cfg!(target_os = "macos") || binding.key.is_some())
             .filter(|binding| !self.hotkey_in_use(HotkeySlot::TypedText, binding))
     }
 
@@ -1217,7 +1219,7 @@ pub enum HotkeySlot {
     Dictation,
     PasteLast,
     RawDictation,
-    /// Labs › Transform typed text's shortcut (Linux).
+    /// Labs › Transform typed text's shortcut (macOS and Linux).
     TypedText,
     #[cfg(hex_capture)]
     Capture,
@@ -1924,34 +1926,45 @@ mod tests {
         }
     }
 
-    /// Labs › Transform typed text: its binding takes effect only on Linux
-    /// with its toggle on, never sharing a key with another shortcut, and
-    /// the other shortcuts' checks count it while it is active.
+    /// Labs › Transform typed text: its binding takes effect on macOS and
+    /// Linux with its toggle on, never sharing a key with another shortcut,
+    /// and the other shortcuts' checks count it while it is active.
     #[test]
     fn the_typed_text_shortcut_needs_its_lab_and_its_own_keys() {
-        let function = HotkeyBinding {
-            modifiers: HotkeyModifiers {
-                function: true,
-                ..HotkeyModifiers::default()
-            },
-            key: None,
+        let binding = HotkeyBinding {
+            modifiers: HotkeyModifiers::default(),
+            key: Some(crate::app_settings::HotkeyKey {
+                code: 105,
+                label: "F13".into(),
+            }),
         };
         let mut settings = AppSettings {
-            typed_text_hotkey: Some(function.clone()),
+            typed_text_hotkey: Some(binding.clone()),
             ..AppSettings::default()
         };
         assert!(!settings.labs.typed_text);
         assert_eq!(settings.runtime_hotkeys().typed_text, None);
-        assert!(!settings.hotkey_in_use(HotkeySlot::RawDictation, &function));
+        assert!(!settings.hotkey_in_use(HotkeySlot::RawDictation, &binding));
 
         settings.labs.typed_text = true;
         let active = settings.runtime_hotkeys().typed_text;
-        if cfg!(target_os = "linux") {
-            assert_eq!(active, Some(function.runtime()));
-            assert!(settings.hotkey_in_use(HotkeySlot::RawDictation, &function));
-            assert!(settings.hotkey_in_use(HotkeySlot::Dictation, &function));
+        if cfg!(any(target_os = "macos", target_os = "linux")) {
+            assert_eq!(active, Some(binding.runtime()));
+            assert!(settings.hotkey_in_use(HotkeySlot::RawDictation, &binding));
+            assert!(settings.hotkey_in_use(HotkeySlot::Dictation, &binding));
         } else {
             assert_eq!(active, None);
+        }
+
+        if cfg!(target_os = "macos") {
+            settings.typed_text_hotkey = Some(HotkeyBinding {
+                modifiers: HotkeyModifiers {
+                    function: true,
+                    ..HotkeyModifiers::default()
+                },
+                key: None,
+            });
+            assert_eq!(settings.runtime_hotkeys().typed_text, None);
         }
 
         // The dictation shortcut's own keys are refused, and a saved overlap

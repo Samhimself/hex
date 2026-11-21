@@ -74,6 +74,8 @@ mod shortcut_pause;
 #[cfg(target_os = "macos")]
 mod suppression;
 mod transcription;
+#[cfg(target_os = "macos")]
+mod typed_text;
 mod updater;
 #[cfg(target_os = "windows")]
 mod windows;

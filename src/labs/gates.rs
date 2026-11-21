@@ -296,10 +296,10 @@ pub fn gnome_clipboard_restore() -> bool {
     on(GNOME_CLIPBOARD_RESTORE) && Feature::GnomeClipboardRestore.on_this_os()
 }
 
-/// A shortcut runs the focused app's Output steps on the text already typed
-/// there and replaces it (Linux; read as each shortcut press starts and by
-/// the Output pane's row).
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+/// A shortcut cleans text already typed in the focused app and replaces it
+/// (macOS and Linux; read as each shortcut press starts and by the Output
+/// pane's row).
+#[cfg_attr(not(any(target_os = "macos", target_os = "linux")), allow(dead_code))]
 pub fn typed_text() -> bool {
     on(TYPED_TEXT) && Feature::TypedText.on_this_os()
 }

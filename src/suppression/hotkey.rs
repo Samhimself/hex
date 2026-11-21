@@ -17,6 +17,8 @@ pub enum HotkeyAction {
     CancelShortcut,
     PasteLast,
     PasteMeeting,
+    /// Labs › Transform typed text.
+    TypedText,
 }
 
 impl HotkeyAction {
