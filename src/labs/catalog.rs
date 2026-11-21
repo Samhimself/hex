@@ -275,10 +275,10 @@ impl Feature {
             Self::SectionKeyAlone => MACOS_LINUX,
             Self::MicrophoneKeyAlone => MACOS,
             Self::GnomeClipboardRestore
-            | Self::TypedText
             | Self::GnomeMeetingCapsules
             | Self::GnomeAnnotate
             | Self::LiveTyping => LINUX,
+            Self::TypedText => MACOS_LINUX,
             Self::StandaloneSpecialKeys | Self::SkipPauses | Self::TerminalPasteShortcut => {
                 WINDOWS_LINUX
             }

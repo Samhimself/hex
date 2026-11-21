@@ -6,7 +6,24 @@
 use crate::app_settings::MAX_EXTRA_DICTATION_SHORTCUTS;
 use crate::audio::CaptureInstant;
 use crate::control::{PrintReply, PrintedTranscript};
+use crate::desktop::events::DictationPhase;
+use crate::feedback::{self, Tone};
+use crate::parakeet::PasteKind;
 use crate::suppression::{DictationHotkey, HotkeyAction, InputEvent};
+
+/// The activity phase for a completed paste. Typed-text cleanup is not a
+/// dictation and never publishes the person's text to the activity log.
+pub(super) fn finished_paste(kind: PasteKind, text: &str) -> Option<DictationPhase> {
+    match kind {
+        PasteKind::LastTranscript => Some(DictationPhase::Repasted),
+        PasteKind::MeetingDelta => Some(DictationPhase::MeetingPasted),
+        PasteKind::TypedText => {
+            tracing::info!(text_chars = text.chars().count(), "cleaned typed text");
+            feedback::play(Tone::DictationDone);
+            None
+        }
+    }
+}
 
 /// One of the dictation shortcut machines.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -344,6 +361,7 @@ impl Hotkeys {
             }
             HotkeyAction::PasteLast
             | HotkeyAction::PasteMeeting
+            | HotkeyAction::TypedText
             | HotkeyAction::Cancel
             | HotkeyAction::CancelShortcut => print.send(PrintedTranscript::Cancelled),
         }
@@ -385,8 +403,9 @@ impl Hotkeys {
                 Some(HotkeyAction::Start) if others_recording => {
                     machine.suspend();
                 }
-                Some(HotkeyAction::PasteLast | HotkeyAction::PasteMeeting)
-                    if shortcut != Shortcut::Dictation => {}
+                Some(
+                    HotkeyAction::PasteLast | HotkeyAction::PasteMeeting | HotkeyAction::TypedText,
+                ) if shortcut != Shortcut::Dictation => {}
                 Some(action) => actions.push((shortcut, action)),
                 None => {}
             }

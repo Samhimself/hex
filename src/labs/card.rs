@@ -238,7 +238,7 @@ impl Feature {
                 "Put back what you copied before a dictation, through XWayland. Works only while XWayland is already running"
             }
             Self::TypedText => {
-                "Adds a shortcut that runs your Output steps on text you typed and replaces it."
+                "Adds a shortcut that cleans text you typed and replaces it in place."
             }
             Self::MeetingNotesVocabulary => {
                 "Meeting titles and summaries read your vocabulary, so names are spelled the way you wrote them"

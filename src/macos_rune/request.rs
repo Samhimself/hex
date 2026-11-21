@@ -48,6 +48,8 @@ pub(crate) enum ShortcutTarget {
     #[cfg(hex_capture)]
     CaptureReplay,
     RawDictation,
+    /// Labs › Transform typed text.
+    TypedText,
     /// Labs › Second dictation shortcut.
     SecondDictation,
     /// Labs › More dictation shortcuts (macOS): row `index`.

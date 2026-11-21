@@ -242,8 +242,12 @@ Feature             Pane  Toggle (settings.json, hex settings)   On: what it doe
 │                                        keeping transcript, notes, summary, and Markdown
 ├── Restore clipboard on GNOME no labs.gnome_clipboard_restore (Linux) on a Wayland desktop without data-control (GNOME), a paste snapshots and restores
 │                                        the clipboard through XWayland, only while this user's Xwayland already runs; never starts it (#1111)
-├── Transform typed text no labs.typed_text + typed_text_hotkey (Linux) Settings › Output shows a Typed text section whose shortcut is unbound by
-│                                        default; the shortcut or `hex typed-text` takes the clipboard (adopting a paste's pending restore), clears it,
+├── Transform typed text no labs.typed_text + typed_text_hotkey (macOS, Linux) Settings › Output shows a Typed text section whose shortcut is unbound by
+│                                        default. On macOS it copies the selection (or selects the focused field), fixes grammar and clear list-like
+│                                        structure locally with Apple Intelligence, verifies the same app, field, text, and clipboard, replaces it,
+│                                        and safely restores the clipboard; it refuses secure/non-text fields, unavailable Apple Intelligence, text
+│                                        over 20,000 characters, unsafe model output, or any changed target. OpenCode is never used.
+│                                        On Linux the shortcut or `hex typed-text` takes the clipboard (adopting a paste's pending restore), clears it,
 │                                        sends Ctrl+A then Ctrl+C, runs the focused app's Output steps on the copied text (skipping spoken
 │                                        formatting, spoken symbols, and filler words), clears and re-copies to confirm the selection still holds
 │                                        that text, then pastes the result over it and restores the clipboard 500 ms later unless a newer copy
@@ -252,7 +256,8 @@ Feature             Pane  Toggle (settings.json, hex settings)   On: what it doe
 │                                        It sends Ctrl+A/Ctrl+C, so it is not meant for terminals, and refuses before any key while
 │                                        Terminal paste is on, because its Ctrl+V would become Ctrl+Shift+V.
 │                                        // checks: typed_text_is_its_own_bit_and_off_by_default (labs.rs), the shortcut's rules
-│                                        // (app_settings.rs), typed_text_fires_only_while_idle_and_changes_no_capture_state (linux/input.rs),
+│                                        // (app_settings.rs), macOS action/prompt guards (suppression/tests.rs, typed_text.rs),
+│                                        // typed_text_fires_only_while_idle_and_changes_no_capture_state (linux/input.rs),
 │                                        // typed_text_skips_the_dictation_only_labs (dictation/processor.rs),
 │                                        // typed_text_joins_the_commands_only_while_its_lab_is_on (linux/gnome_shortcuts.rs), the fake-backed
 │                                        // typed-text job tests and a_changed_second_copy_aborts_the_replacement (linux/typed_text.rs),

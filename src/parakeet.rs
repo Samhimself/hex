@@ -83,6 +83,8 @@ pub enum DictationJobStage {
 pub enum PasteKind {
     LastTranscript,
     MeetingDelta,
+    /// Labs › Transform typed text (macOS).
+    TypedText,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -540,6 +542,13 @@ impl DictationWorker {
         self.submit_paste(PasteKind::MeetingDelta)
     }
 
+    pub fn transform_typed_text(&self) -> Result<(), &'static str> {
+        if !crate::labs::typed_text() {
+            return Err("Transform typed text is off in Labs");
+        }
+        self.submit_paste(PasteKind::TypedText)
+    }
+
     fn submit_paste(&self, kind: PasteKind) -> Result<(), &'static str> {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         let sequence = state.next_output_sequence()?;
@@ -605,12 +614,23 @@ fn run_output_worker(
             continue;
         }
         for job in ordered.push(job) {
-            let event = finish_output(
-                job,
-                &mut |text, mode| paster.paste(text, mode),
-                &mut last_transcript,
-                history.as_ref(),
-            );
+            let event = match job {
+                OutputJob::Paste {
+                    kind: PasteKind::TypedText,
+                    ..
+                } => WorkerEvent::Pasted {
+                    kind: PasteKind::TypedText,
+                    result: paster
+                        .transform_typed_text()
+                        .map_err(|error| error.to_string()),
+                },
+                job => finish_output(
+                    job,
+                    &mut |text, mode| paster.paste(text, mode),
+                    &mut last_transcript,
+                    history.as_ref(),
+                ),
+            };
             let mut state = state.lock().unwrap_or_else(|error| error.into_inner());
             match &event {
                 WorkerEvent::Completed { job_id, .. } => {
@@ -1171,6 +1191,7 @@ fn finish_output(
                 PasteKind::MeetingDelta => {
                     paste_meeting_delta(paste).map_err(|error| error.to_string())
                 }
+                PasteKind::TypedText => unreachable!("typed text runs with the output paster"),
             };
             WorkerEvent::Pasted { kind, result }
         }

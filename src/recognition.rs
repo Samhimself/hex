@@ -20,9 +20,7 @@ use crate::dictation::service::{
 };
 use crate::dictation::{DictationClip, Finish, POST_RELEASE_TAIL};
 use crate::feedback::{self, Tone};
-use crate::parakeet::{
-    DictationJobStage, DictationWorker, PasteKind, TranscriptionTarget, WorkerEvent,
-};
+use crate::parakeet::{DictationJobStage, DictationWorker, TranscriptionTarget, WorkerEvent};
 use crate::suppression::{DictationHotkey, DiscardCause, HotkeyAction, InputMonitor};
 
 mod context_watch;
@@ -1297,7 +1295,7 @@ fn handle_hotkey_action(
                 indicator,
             )
         }
-        HotkeyAction::PasteLast | HotkeyAction::PasteMeeting => {
+        HotkeyAction::PasteLast | HotkeyAction::PasteMeeting | HotkeyAction::TypedText => {
             // The paste chord's modifier press started a provisional capture.
             context.cancel();
             feedback::retract_start();
@@ -1305,6 +1303,7 @@ fn handle_hotkey_action(
             let paste_result = match action {
                 HotkeyAction::PasteLast => worker.paste_last(),
                 HotkeyAction::PasteMeeting => worker.paste_meeting(),
+                HotkeyAction::TypedText => worker.transform_typed_text(),
                 _ => unreachable!(),
             };
             if let Err(error) = paste_result {
@@ -1738,9 +1737,8 @@ fn handle_dictation_event(
             kind,
             result: Ok(text),
         } => {
-            let phase = match kind {
-                PasteKind::LastTranscript => DictationPhase::Repasted,
-                PasteKind::MeetingDelta => DictationPhase::MeetingPasted,
+            let Some(phase) = hotkeys::finished_paste(kind, &text) else {
+                return Ok(());
             };
             events.dictation(phase, text)?;
         }

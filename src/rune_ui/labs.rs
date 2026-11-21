@@ -596,6 +596,7 @@ fn rows(ui: &Ui) -> Vec<Row> {
     // refuses (Labs › Microphone key alone, macOS).
     if caps.os == super::platform::Os::Macos {
         rows.push(row(Feature::MicrophoneKeyAlone, Some(&KEYBOARD)));
+        rows.push(row(Feature::TypedText, Some(&KEYBOARD)));
     }
     // Linux's X11 grabs and shortcuts portal take these keys alone.
     if caps.os == super::platform::Os::Linux {

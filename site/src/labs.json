@@ -633,9 +633,10 @@
       "groupTitle": "Output",
       "id": "typed-text",
       "oses": [
+        "macos",
         "linux"
       ],
-      "summary": "Adds a shortcut that runs your Output steps on text you typed and replaces it.",
+      "summary": "Adds a shortcut that cleans text you typed and replaces it in place.",
       "title": "Transform typed text"
     },
     {

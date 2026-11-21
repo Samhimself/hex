@@ -149,7 +149,7 @@ impl Feature {
                 "Put the previous clipboard back after a paste on GNOME Wayland, through the XWayland clipboard while XWayland is running"
             }
             Self::TypedText => {
-                "Run the focused app's Output steps on the text already typed in the focused field and replace it (typed_text_hotkey)"
+                "Clean text already typed in the focused field and replace it in place (typed_text_hotkey)"
             }
             Self::MeetingNotesVocabulary => {
                 "Meeting titles and summaries read your vocabulary, so names are spelled the way you wrote them"

@@ -459,6 +459,36 @@ pub fn char_before_caret(pid: i32) -> Option<char> {
     })
 }
 
+/// The focused editable text element a typed-text cleanup may operate on.
+/// Secure fields and elements that expose neither a text value nor a
+/// selection range are refused before Hex sends Select All or Copy.
+pub struct FocusedTextElement(CfObject);
+
+impl FocusedTextElement {
+    /// Whether this exact element is still focused in the same application.
+    pub fn is_still_focused(&self, pid: i32) -> bool {
+        let Some(application) = foreign_application(pid) else {
+            return false;
+        };
+        let Some(current) = copy_element(&application, c"AXFocusedUIElement") else {
+            return false;
+        };
+        unsafe { CFEqual(self.0.0, current.0) != 0 }
+    }
+}
+
+pub fn focused_text_element(pid: i32) -> Option<FocusedTextElement> {
+    let application = foreign_application(pid)?;
+    let focused = copy_element(&application, c"AXFocusedUIElement")?;
+    if is_secure_text_field(&focused)
+        || copy_range(&focused, c"AXSelectedTextRange").is_none()
+        || copy_attribute(&focused, c"AXValue").is_none()
+    {
+        return None;
+    }
+    Some(FocusedTextElement(focused))
+}
+
 fn copy_range(element: &CfObject, name: &CStr) -> Option<CfRange> {
     let value = copy_attribute(element, name)?;
     if unsafe { CFGetTypeID(value.0) } != unsafe { AXValueGetTypeID() } {

@@ -198,7 +198,7 @@ pub(super) fn pane(ui: &Ui, p: Paint, reduced: bool) -> El {
         .children(trust_card(ui, p))
         .child(agent_card(ui, p, reduced))
         .child(every_dictation(ui, p, &processing.default_mode));
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
     if ui.settings.labs.typed_text {
         content = content.child(typed_text(ui, p));
     }
@@ -464,15 +464,26 @@ fn step_row(p: Paint, key: &str, index: usize, step: &Step) -> El {
 }
 
 /// Labs › Transform typed text: a shortcut that runs the focused app's
-/// Output steps on the text already typed in the focused field and replaces
-/// it. Unbound until the person records one (Linux).
-#[cfg(target_os = "linux")]
+/// text already typed in the focused field and replaces it. Unbound until
+/// the person records one (macOS and Linux).
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn typed_text(ui: &Ui, p: Paint) -> El {
+    let (summary, detail) = if cfg!(target_os = "macos") {
+        (
+            tr("Fixes grammar and simple formatting"),
+            tr("Uses Apple Intelligence on this Mac"),
+        )
+    } else {
+        (
+            tr("Runs Output on what you typed"),
+            tr("Replaces what you typed where it is"),
+        )
+    };
     labeled(
         p,
         "typed-text",
         tr("Typed text"),
-        tr("Runs Output on what you typed"),
+        summary,
         super::general::shortcut_rows(
             ui,
             p,
@@ -480,7 +491,7 @@ fn typed_text(ui: &Ui, p: Paint) -> El {
             &super::icons::KEYBOARD,
             tr("Transform typed text"),
             ShortcutTarget::TypedText,
-            Some(tr("Replaces what you typed where it is")),
+            Some(detail),
         ),
     )
 }

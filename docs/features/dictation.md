@@ -425,7 +425,28 @@ raw targets go straight to output), so it also skips Labs › Clean up with
 Apple Intelligence ([labs.md](labs.md)); elsewhere that stage is macOS-only,
 so it never runs on the shared pipeline either.
 
-### Transform Typed Text (Labs, Linux)
+### Transform Typed Text (Labs, macOS and Linux)
+
+On macOS the unbound shortcut first tries the current selection, then selects
+the whole focused field when nothing is selected. It refuses password fields
+and elements Accessibility does not identify as editable text. Apple
+Intelligence fixes grammar, spelling, capitalization, and punctuation locally,
+preserves meaning and existing structure, and may normalize clearly list-like
+content into a numbered list. OpenCode and the configured dictation Output
+steps are not used. Text over 20,000 characters is refused.
+
+The macOS output worker preserves every clipboard format, waits for the
+shortcut keys to come up, and copies the target. After Apple Intelligence
+returns, it requires the same application and exact Accessibility element,
+an unchanged clipboard, and the exact copied text still selected. A failed
+check restores the clipboard and replaces nothing; an external clipboard
+change is kept. A successful Command-V restores the earlier clipboard after
+500 ms only if the replacement still owns it. The cleanup answer is refused
+when empty, fenced unexpectedly, or more than four times longer or shorter
+than the input. Apple Intelligence unavailable, off, or still downloading is
+reported with the existing system reason and nothing is replaced.
+
+On Linux, the same Lab retains its existing Output-steps behavior:
 
 With Labs › Transform typed text on (`labs.typed_text`, off by default),
 Settings › Output adds one section whose shortcut is unbound until recorded.
@@ -478,6 +499,8 @@ Output > Typed text                        // labs.md
 Checks: `typed_text_is_its_own_bit_and_off_by_default` ([labs.rs](../../src/labs.rs)),
 `the_typed_text_shortcut_needs_its_lab_and_its_own_keys`
 ([app_settings.rs](../../src/app_settings.rs)),
+the macOS shortcut action check ([suppression/tests.rs](../../src/suppression/tests.rs)),
+the prompt-boundary and answer guards ([typed_text.rs](../../src/typed_text.rs)),
 `typed_text_is_registered_only_while_its_lab_is_on` and
 `typed_text_fires_only_while_idle_and_changes_no_capture_state`
 ([input.rs](../../src/linux/input.rs)), `typed_text_skips_the_dictation_only_labs`
@@ -498,11 +521,11 @@ and `transformation_context_names_its_source` ([processor.rs](../../src/dictatio
 `a_changed_clipboard_is_not_replaced_by_a_pending_restore`, and
 `a_failed_dictation_paste_leaves_the_transcript_on_the_clipboard`
 ([paste.rs](../../src/linux/paste.rs)); and `the_gnome_shortcut_key_tracks_typed_text`
-([app.rs](../../src/linux/app.rs)). Known limits: select-all replaces the
-whole field, so a field with mixed formatting loses it; on GNOME the clipboard
+([app.rs](../../src/linux/app.rs)). Known limits: replacement is plain text,
+so a field with mixed rich-text formatting loses it; on GNOME the clipboard
 text is read through `wl-paste`, which may briefly take focus. Proof limits: no
-shortcut press against a real target application was run; the flow is covered
-by unit tests only.
+shortcut press against a real target application was run on either OS; the
+flow is covered by unit tests and a compiling macOS build only.
 
 ### Rewrite With Nearby Text (Labs, macOS)
 

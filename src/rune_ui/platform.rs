@@ -67,8 +67,8 @@ pub(super) struct Capabilities {
     /// A mode's speech model and language follow the frontmost application
     /// (macOS and Windows; Labs › Switch model with app).
     pub(super) app_model_switching: bool,
-    /// Labs › Transform typed text: run Output steps on text already typed in
-    /// the focused field and replace it (Linux).
+    /// Labs › Transform typed text: clean text already typed in the focused
+    /// field and replace it (macOS and Linux).
     pub(super) typed_text: bool,
 }
 
@@ -108,7 +108,7 @@ impl Capabilities {
         modifier_sides: true,
         keyboard_model_switching: true,
         app_model_switching: true,
-        typed_text: false,
+        typed_text: true,
     };
 
     pub(super) const WINDOWS: Self = Self {
